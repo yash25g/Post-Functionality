@@ -1,0 +1,21 @@
+.title{
+    font-weight: bold;
+    text-transform: uppercase;
+}
+.content{
+    padding: 8px;
+    background-color: #ffffff;
+    border-radius: 0.25rem;
+}
+.divInline{
+    display:inline;
+}
+.divInline2{
+    display:inline;
+}
+.boldText{
+    font-weight: bold;
+}
+.yellow-icon{
+    --lwc-colorTextIconDefault: yellow;
+}

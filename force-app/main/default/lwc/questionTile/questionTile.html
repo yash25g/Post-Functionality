@@ -1,0 +1,203 @@
+<template>
+    <lightning-card title={question.Description__c}> 
+        <div class="slds-grid slds-gutters">
+            <div class="slds-col slds-size_2-of-3">
+              <span><div class="slds-m-around_medium">
+                <template for:each={question.Answers__r} for:item="answer">  
+                 <template if:true={answer.Is_Best_Answer__c}>
+                     <li class="slds-p-around_xx-small" style="color: chartreuse;" key={answer.Id}>
+                         <div class="divInline">
+                         <lightning-button-icon class="slds-p-around_xxx-small" name={answer.Id} title="Upvote" icon-name="utility:like" onclick={handleVote} size="xx-small"></lightning-button-icon>
+                         <lightning-button-icon class="slds-p-around_xxx-small" icon-name="utility:dislike"  name={answer.Id} title="DownVote" size="xx-small" onclick={handleVote}></lightning-button-icon> 
+                         <lightning-button-icon class="slds-p-left_small" icon-name="utility:edit" disabled="true"  name={answer.Id} title="Edit Answer" size="xx-small"></lightning-button-icon> 
+                        </div>
+                         <div class="divInline slds-p-left_x-large">{answer.Description__c}</div>
+                     </li>
+                   </template>            
+                       <template if:false={answer.Is_Best_Answer__c}>
+                         <li class="slds-p-around_xx-small" key={answer.Id}>
+                             <div class="divInline">
+                             <lightning-button-icon class="slds-p-around_xxx-small" name={answer.Id} title="Upvote" icon-name="utility:like" onclick={handleVote} size="xx-small"></lightning-button-icon>
+                             <lightning-button-icon class="slds-p-around_xxx-small" icon-name="utility:dislike"  name={answer.Id} title="DownVote" size="xx-small" onclick={handleVote}></lightning-button-icon> 
+                             <lightning-button-icon class="slds-p-left_small" icon-name="utility:edit" id={answer.CreatedById}  name={answer.Id} title="Edit Answer" size="xx-small" onclick={handleEditAnswer}></lightning-button-icon> 
+                            </div>
+                             <div class="divInline slds-p-left_x-large">
+                                 {answer.Description__c}                            
+                             </div>
+                         </li>
+                       </template>                                              
+               </template> 
+             </div></span>
+            </div>
+            <div class="slds-col slds-size_1-of-3">
+              <template if:true={question.Answers__r}>
+              <span class="boldText">Ratings</span>
+              <template for:each={question.Answers__r} for:item="answer">  
+                    <ul class="slds-p-around_xx-small"  key={answer.Id}>
+                        <div class="divInline"> 
+                            <!--{answer.Rating__c} - <lightning-icon class="yellow-icon" icon-name="utility:favorite"  name={answer.Id} size="xx-small"></lightning-icon> -->
+                            <c-display-star answer={answer}></c-display-star>
+                       </div>
+                    </ul>
+               </template>
+               </template>
+            </div>
+          </div>       
+        
+        <!--   ACTION BUTTONS -->
+        <div class="slds-p-around_xxx-small">
+            <template if:false={question.Best_Answer__c}>
+                <lightning-button class="slds-p-around_xxx-small" label="New Answer" slot="actions" onclick={handleNew}></lightning-button>
+                <lightning-button disabled={hasAnswer} class="slds-p-around_xxx-small" label="Select Best" slot="actions" onclick={handleBest}></lightning-button>
+               <lightning-button disabled={isOwner} class="slds-p-around_xxx-small" label="Edit Question" slot="actions" onclick={publishMessage}></lightning-button>
+            </template>                        
+        </div>
+        <br>
+    </lightning-card>
+    <br>
+    <template if:true={showModal}>
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+          <div class="slds-modal__container">
+              <!-- Modal/Popup Box LWC header here -->
+              <header class="slds-modal__header">
+                  <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeModal}>
+                      <lightning-icon icon-name="utility:close"
+                          alternative-text="close"
+                          variant="inverse"
+                          size="small" ></lightning-icon>
+                      <span class="slds-assistive-text">Close</span>
+                  </button>
+                  <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Answer for - {question.Description__c}</h2>
+              </header>
+              <!-- Modal/Popup Box LWC body starts here -->
+              <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">                  
+                  <lightning-input name="input3" value={userAnswer} onchange={captureValue} placeholder="Your Answer"></lightning-input>
+              </div>
+              <footer class="slds-modal__footer">                
+                <button class="slds-button slds-button_brand" disabled={userEnteredAnswer} name={question.Id} onclick={submitAnswer} title="Submit">Submit</button>
+            </footer>
+          </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- EDIT Question Start -->
+      
+    <template if:true={editQuestionModal}>
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+          <div class="slds-modal__container">
+              <!-- Modal/Popup Box LWC header here -->
+              <header class="slds-modal__header">
+                  <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeQuestion}>
+                      <lightning-icon icon-name="utility:close"
+                          alternative-text="close"
+                          variant="inverse"
+                          size="small" ></lightning-icon>
+                      <span class="slds-assistive-text">Close</span>
+                  </button>
+                  <h2 id="modal-heading-02" class="slds-text-heading_medium slds-hyphenate">Edit</h2>
+              </header>
+              <!-- Modal/Popup Box LWC body starts here -->
+              <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-2">                  
+                <lightning-record-edit-form
+                record-id={question.Id}
+                object-api-name="Question__c"
+                onsuccess={handleSuccess}
+            >
+                <lightning-messages> </lightning-messages>
+                <lightning-output-field field-name="Name">
+                </lightning-output-field>
+                <lightning-input-field field-name="Description__c"> </lightning-input-field>
+                <lightning-button
+                    class="slds-m-top_small"
+                    variant="brand"
+                    type="submit"
+                    name="update"
+                    label="Update"
+                >
+                </lightning-button>
+            </lightning-record-edit-form>
+              </div>
+          </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- SHOW BEST -->
+    <template if:true={showBest}>
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+          <div class="slds-modal__container">
+              <!-- Modal/Popup Box LWC header here -->
+              <header class="slds-modal__header">
+                  <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeBest}>
+                      <lightning-icon icon-name="utility:close"
+                          alternative-text="close"
+                          variant="inverse"
+                          size="small" ></lightning-icon>
+                      <span class="slds-assistive-text">Close</span>
+                  </button>
+                  <h2 id="modal-heading-03" class="slds-text-heading_medium slds-hyphenate">Select Best</h2>
+              </header>
+              <!-- Modal/Popup Box LWC body starts here -->
+              <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-3"> 
+                <div class="slds-grid slds-gutters slds-p-bottom_medium">
+                <template for:each={question.Answers__r} for:item="answer">       
+                    <div key={answer.Id} class="slds-col">
+                        <input type="radio" onchange={changeHandler}  key={answer.Id} name="bestAnswer" value={answer.Id}  style="margin-right: 5px;" >
+                        {answer.Description__c}
+                    </div>                                
+                </template>                 
+                </div>
+              </div>
+            <footer class="slds-modal__footer">                
+                <button class="slds-button slds-button_brand" onclick={submitBest} title="Submit">Submit</button>
+            </footer>
+          </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <!-- EDIT ANSWER MODAL-->
+    <template if:true={editAnswerModal}>
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+          <div class="slds-modal__container">
+              <!-- Modal/Popup Box LWC header here -->
+              <header class="slds-modal__header">
+                  <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeAnswer}>
+                      <lightning-icon icon-name="utility:close"
+                          alternative-text="close"
+                          variant="inverse"
+                          size="small" ></lightning-icon>
+                      <span class="slds-assistive-text">Close</span>
+                  </button>
+                  <h2 id="modal-heading-04" class="slds-text-heading_medium slds-hyphenate">Edit Answer</h2>
+              </header>
+              <!-- Modal/Popup Box LWC body starts here -->
+              <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-4">                  
+                <lightning-record-edit-form
+                record-id={editAnswerId}
+                object-api-name="Answer__c"
+                onsuccess={handleSuccess}
+                onsubmit={handleSubmitAnswer}
+               
+            >
+            <lightning-messages> </lightning-messages> 
+                <lightning-output-field field-name="Name">
+                </lightning-output-field>
+                <lightning-input-field field-name="Description__c"> </lightning-input-field>
+                <lightning-button
+                    class="slds-m-top_small"
+                    variant="brand"
+                    type="submit"
+                    name="update"
+                    label="Update"
+                >
+                </lightning-button>
+            </lightning-record-edit-form>
+              </div>
+          </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+</template>

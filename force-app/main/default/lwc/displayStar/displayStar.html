@@ -1,0 +1,14 @@
+<template>
+    <template if:false={noRating}>
+      <template if:true={counted}>
+        <template for:each={listOfCount} for:item="eachCount">
+            <lightning-icon key={eachCount} class="yellow-icon" icon-name="utility:favorite"  size="xx-small"></lightning-icon>
+        </template>        
+      </template> 
+    </template>
+    <template if:true={noRating}>
+        <template if:true={counted}>
+            Not Rated
+        </template>
+    </template>   
+</template>
